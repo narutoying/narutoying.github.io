@@ -1,0 +1,16 @@
+markdown: rdiscount
+permalink: /:title/
+url: http://narutoying.github.io
+name: narutoying's blog
+author: narutoying
+qq: 110400075
+email: narutoying09@gmail.com
+duoshuo: narutoying
+beian: 
+cnzz: 
+weibo: 1694818593
+github: narutoying
+pygments: true
+safe: true
+paginate: 20
+about: "戴诚的个人博客，分享技术、互联网、随想"
