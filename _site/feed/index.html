@@ -7,8 +7,113 @@
     <title>narutoying's blog</title>
     <link href="http://narutoying.github.io/feed/" rel="self" />
     <link href="http://narutoying.github.io" />
-    <lastBuildDate>2014-04-21T10:44:57+08:00</lastBuildDate>
+    <lastBuildDate>2014-04-27T15:49:35+08:00</lastBuildDate>
     <webMaster>narutoying09@gmail.com</webMaster>
+    
+    <item>
+      <title>浅谈单元测试</title>
+      <link href="http://narutoying.github.io/unitTest/"/>
+      <pubDate>2014-04-27T05:25:00+08:00</pubDate>
+      <author>narutoying</author>
+      <guid>http://narutoying.github.io/unitTest</guid>
+      <content:encoded><![CDATA[<blockquote><p>对于开发人员来说，单元测试可谓离开发最近的测试方式。作为一个轻量化的测试，单元测试着眼于对整个软件系统的最小单元进行测试。虽然无法真实、整体地测试系统的各个功能点，但万丈高楼平地起，将各个环节的基础打扎实，才能支撑整个系统的正常运行。但事实上，由于各种客观的、主观的原因，单元测试并非被大量应用，笔者大多也只有在程序逻辑特别复杂的时候才会去写单元测试。本文将通过介绍单元测试的概念、目的和实践，来强调单元测试的重要性，并阐述下笔者对于如何把握单元测试的粒度和软件开发速度之间平衡的思考。</p></blockquote>
+
+<h2>什么是单元测试</h2>
+
+<p>&emsp;&emsp;在计算机编程中，单元测试是针对<strong>程序模块</strong>（软件设计的最小单位）来进行<strong>正确性检验</strong>的测试工作。程序单元是应用的最小可测试部件。在过程化编程中，一个单元就是单个程序、函数、过程等；对于面向对象编程，最小单元就是方法，包括基类（超类）、抽象类、或者派生类（子类）中的方法。<br/>
+&emsp;&emsp;当前的软件系统开发过程中，很少会有类、方法完全不依赖于外部服务、接口来实现业务逻辑。比如一个用户在网站上购买了一本书并下了订单，单看下订单这个过程，就会涉及到用户、订单、商品、库存等系统/服务。所以，在编写下单的代码时，不可避免地会去依赖用户、商品、库存等系统的服务。如果想要真实的测试下单功能，那需要将整个调用链路上的系统服务都启动起来。这样的测试方法虽然能够测试下单的功能，但会导致测试非常的复杂，因为很有可能下单本身的逻辑没有问题，但由于整条链路上涉及多个系统，每个系统都有可能出现问题，在测试下单的过程中，其实相当于对其他的系统也做了测试，且这些系统的运行情况将会影响到最终的测试结果；并且，搭建这样一条完整的链路，也将带来测试环境的高成本、高维护难度的问题。<br/>
+&emsp;&emsp;为了解决各种外部依赖（web服务、数据库等）这个问题，在单元测试的中，mock应运而生。mock是一种以可控的方式来创建并模拟真实对象行为的手段。比如，通过某些mock工具，可以指定当以某些参数调用某个方法时，返回特定的正确值、错误值或直接抛出异常，从而达到单元测试只覆盖软件的最小模块的测试，而无需依赖其他组件、服务。<br/>
+&emsp;&emsp;比如对于上面提到的用户下单的例子，当开发人员只想对下单的主流程做单元测试，他就可以将对用户信息查询、订单创建、商品查询、库存扣减等操作进行mock，进行对主流程的正确性、错误/异常处理的测试，验证<strong>程序模块</strong>的行为是否满足预期。</p>
+
+<h2>为什么做单元测试</h2>
+
+<h3>验证单元行为</h3>
+
+<p>&emsp;&emsp;开发人员编写程序最主要的目的就是让程序运行起来，满足一定的功能需求。而单元测试最主要的目的与其保持一致，验证程序的行为是否满足预期。通常，开发人员只关心程序的功能是否实现，即业务主流程，但只是开发需要满足的最基本的一点。在满足主功能实现和测试正确的基础上，还需要对程序各类分支、校验、异常处理进行测试。通常情况下，一些分支、异常处理都是很难进行测试的，比如网络超时、数据库异常，但引入单元测试后，可以通过mock的方式模拟出极端情况下的一些行为，便于测试覆盖的全面性。单元测试做的越全面，覆盖程序单元的各种行为，自己心中对该单元的运行就更有把握。</p>
+
+<h3>关注点分离</h3>
+
+<p>&emsp;&emsp;现在的软件开发不可能做到只依赖自己的功能模块，比如在SOA架构下，通常一个系统会依赖很多其他系统的服务；即使在自身系统内部，也会依赖下层各类模块、数据库。如果测试时需要考虑这么多的依赖组件、模块，那么测试将会变得非常笨重、低效，也可能导致测试不准确。单元测试只关注于系统最小单元，对于各种内外部依赖采取的是模拟的策略，在保证自身单元运行正确的基础上，再进行更上层的测试，比如集成测试。</p>
+
+<h3>适应变更</h3>
+
+<p>&emsp;&emsp;在当下的环境，特别是互联网行业，软件开发基本不可能一成不变。业务不断地变化，软件架构、系统就需要不断地做出合适的调整、设计、开发才能满足业务快速发展的需求。通常来说，由于进度的限制，通常不会有大量的时间来让工程师进行设计，所以系统的设计、实现都会受限于工程师的经验、能力。当新的业务出现，现有系统需要做很大的调整、重构才能更好地支持业务。此时，如果有强有力的单元测试，那就会使得重构变得十分有保证。当开发人员进行重构的过程中，可以通过单元测试的反馈，发现重构过程中是否出现错误、依赖，然后进行相应的调整，直到满足原先该单元测试对预期行为的要求。</p>
+
+<h3>简化集成</h3>
+
+<p>&emsp;&emsp;单元测试用于确保程序单元的正确性，是一种自底向上的测试方式。在满足程序单元行为符合预期的基础上，再进行各部件的集成测试就会变得更为简单。</p>
+
+<h3>优化设计与代码</h3>
+
+<p>&emsp;&emsp;由于单元测试的关注点是程序模块这一最小单元，如果想要对该单元测试，就需要该单元容易被测试。如果我们发现很难对这一单元进行单元测试，多半是因为设计、开发上出现问题。这就促使我们设计、编写更为简洁、高内聚低耦合的clean code，消除代码坏味道。
+&emsp;&emsp;另外不得不提到TDD（测试驱动开发）。记得上大学的时候，笔者在图书馆看到一本Kent Beck（极限编程、TDD老祖）编写的《测试驱动开发》，当时觉得好奇，怎么可能测试来驱动开发，不应该先有开发，才有代码能够让人去测试。当时简单地读了之后，没有特别放在心上，以为就是个假洋鬼子在炒概念。最近一段时间，又在一本介绍敏捷的书上看到TDD的介绍，这次就仔细地阅读了下，发现TDD的本质其实并不是测试，而是一种以测试系统功能正确性的思路来指导我们设计、编写出可测试的、优雅的代码。<br/>
+&emsp;&emsp;笔者以前上学、刚开始工作做开发的时候，习惯采用的可以算式bottom-up的方式，即逐步写出一些所要实现的系统功能的类、方法，从而实现功能需求；而TDD在某种角度来看，其实与面向接口编程的思想是一致的，通过分离接口与实现来简化软件开发的复杂度。按照TDD的思想，就是一种top-down的方式，自上往下，编写业务主流程，同时保证该部分单元是易于测试。</p>
+
+<h3>文档记录</h3>
+
+<h2>如何做单元测试</h2>
+
+<h3>框架&amp;工具</h3>
+
+<h4>Junit</h4>
+
+<h4>Mockito</h4>
+
+<h4>PowerMockito</h4>
+
+<h4>持续集成（CI）</h4>
+
+<h3>最佳实践</h3>
+
+<pre>
+<code>
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(StaticClass.class)
+public class TestReceiptAutoRefundJob extends Mockito {
+    @InjectMocks
+    private ReceiptAutoRefundJob receiptAutoRefundJob;
+    @Mock
+    private RefundOrderService refundOrderService;
+    @Mock
+    private DealDAO dealDAO;
+    
+    @Before
+    public void setUp() throws Exception {
+        PowerMockito.mockStatic(StaticClass.class);
+PowerMockito.when(LionConfigUtils.getProperty(ReceiptAutoRefundJob.TUANGOU_RECEIPT_JOB_AUTO_REFUND_USER_BLACK_LIST
+                , null)).thenReturn("[1,2,3]");
+        when(dealDAO.getDealsToAutoRefund(anyInt(), (java.util.Date) any())).thenReturn(getRefundDeal());
+        doNothing().when(refundDealDAO).insertRefundDeal(dealId1, anyInt);
+    }
+    
+    @Test
+    public void testProcessRefundOrdersSuccess() throws Exception {
+when(refundOrderService.requestRefund(any(RefundOrderDTO.class))).thenReturn(getOrderResponse());
+    }
+    
+}
+</code>
+</pre>
+
+
+<h2>个人小结</h2>
+
+<h3>单元测试的局限</h3>
+
+<h3>开发与测试的平衡</h3>
+]]></content:encoded>
+    </item>
     
     <item>
       <title>开博第一篇</title>
