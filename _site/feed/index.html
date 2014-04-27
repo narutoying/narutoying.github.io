@@ -7,7 +7,7 @@
     <title>narutoying's blog</title>
     <link href="http://narutoying.github.io/feed/" rel="self" />
     <link href="http://narutoying.github.io" />
-    <lastBuildDate>2014-04-27T15:49:35+08:00</lastBuildDate>
+    <lastBuildDate>2014-04-27T22:03:07+08:00</lastBuildDate>
     <webMaster>narutoying09@gmail.com</webMaster>
     
     <item>
@@ -26,6 +26,8 @@
 &emsp;&emsp;比如对于上面提到的用户下单的例子，当开发人员只想对下单的主流程做单元测试，他就可以将对用户信息查询、订单创建、商品查询、库存扣减等操作进行mock，进行对主流程的正确性、错误/异常处理的测试，验证<strong>程序模块</strong>的行为是否满足预期。</p>
 
 <h2>为什么做单元测试</h2>
+
+<p><br/></p>
 
 <h3>验证单元行为</h3>
 
@@ -51,23 +53,43 @@
 
 <h3>文档记录</h3>
 
+<p>&emsp;&emsp;传统项目、系统文档通常会随着时间的流逝变得过时，而代码始终保持最新。在单元测试中，我们可以看到各程序单元最基础的API，无需关心内部实现细节；无论代码如何修改、重构，只要单元测试存在并有效，它就是最时效、有用的文档。</p>
+
 <h2>如何做单元测试</h2>
 
 <h3>框架&amp;工具</h3>
 
 <h4>Junit</h4>
 
+<p>基于Java的单元测试框架，为单元测试提供运行、测试基础。<a href="http://junit.org/">框架地址</a></p>
+
 <h4>Mockito</h4>
+
+<p>基于Java的mock框架，简洁的API设计，与Junit配合，能够非常方便地写出单元测试。
+<a href="https://code.google.com/p/mockito/">框架地址</a></p>
 
 <h4>PowerMockito</h4>
 
+<p>Mockito无法实现mock，如静态方法、构造器、Final类/方法等，PowerMockito能够很好地支持这些场景的mock需求，通常将其与Mockito联合使用。
+<a href="https://code.google.com/p/powermock/">框架地址</a></p>
+
 <h4>持续集成（CI）</h4>
+
+<p>自动化的进行构建、部署、测试，尽快地发现错误，尽管CI主要用于集成测试，不过用来自动地进行单元测试也无可厚非。<a href="http://jenkins-ci.org/">Jekins地址</a></p>
 
 <h3>最佳实践</h3>
 
 <pre>
 <code>
-import org.junit.Assert;
+package com.narutoying.test.unit;
+
+import com.narutoying.order.model.OrderResult;
+import com.narutoying.order.service.OrderService;
+import com.narutoying.order.service.impl.OrderServiceImpl;
+import com.narutoying.service.StockService;
+import com.narutoying.service.UserService;
+import com.narutoying.util.ParameterUtil;
+import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,40 +100,101 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+/**
+ * Created by cheng.dai on 14-4-27.
+ */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(StaticClass.class)
-public class TestReceiptAutoRefundJob extends Mockito {
+@PrepareForTest(ParameterUtil.class)
+public class TestOrderService extends Mockito {
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private StockService stockService;
+
     @InjectMocks
-    private ReceiptAutoRefundJob receiptAutoRefundJob;
-    @Mock
-    private RefundOrderService refundOrderService;
-    @Mock
-    private DealDAO dealDAO;
-    
+    private OrderService orderService = new OrderServiceImpl();
+
+    private int quantity1 = 1;
+    private int quantity2 = -1;
+    private int quantity3 = 3;
+    private int quantity4 = 4;
+    private int productId1 = 1;
+    private int productId2 = -1;
+    private int userId1 = 101;
+    private int userId2 = 102;
+
     @Before
-    public void setUp() throws Exception {
-        PowerMockito.mockStatic(StaticClass.class);
-PowerMockito.when(LionConfigUtils.getProperty(ReceiptAutoRefundJob.TUANGOU_RECEIPT_JOB_AUTO_REFUND_USER_BLACK_LIST
-                , null)).thenReturn("[1,2,3]");
-        when(dealDAO.getDealsToAutoRefund(anyInt(), (java.util.Date) any())).thenReturn(getRefundDeal());
-        doNothing().when(refundDealDAO).insertRefundDeal(dealId1, anyInt);
+    public void setUp() {
+        PowerMockito.mockStatic(ParameterUtil.class);
+        PowerMockito.when(ParameterUtil.isPositive(productId1)).thenReturn(true);
+        PowerMockito.when(ParameterUtil.isPositive(productId2)).thenReturn(false);
+        PowerMockito.when(ParameterUtil.isPositive(quantity1)).thenReturn(true);
+        PowerMockito.when(ParameterUtil.isPositive(quantity2)).thenReturn(false);
+        PowerMockito.when(ParameterUtil.isPositive(quantity3)).thenReturn(true);
+        PowerMockito.when(ParameterUtil.isPositive(quantity4)).thenReturn(true);
+        when(userService.checkExist(userId1)).thenReturn(true);
+        when(userService.checkExist(userId2)).thenReturn(false);
+        when(stockService.lockStock(productId1, quantity1)).thenReturn(true);
+        when(stockService.lockStock(productId1, quantity2)).thenReturn(false);
+        when(stockService.lockStock(productId1, quantity3)).thenReturn(false);
+        when(stockService.lockStock(productId1, quantity4)).thenThrow(new RuntimeException("测试异常"));
     }
-    
+
     @Test
-    public void testProcessRefundOrdersSuccess() throws Exception {
-when(refundOrderService.requestRefund(any(RefundOrderDTO.class))).thenReturn(getOrderResponse());
+    public void testCreateOrderSuccess() {
+        testCreateOrder(userId1, productId1, quantity1, true);
     }
-    
+
+    @Test
+    public void testCreateOrderFail() {
+        testCreateOrder(userId2, productId1, quantity1, false);
+        testCreateOrder(userId1, productId2, quantity1, false);
+        testCreateOrder(userId1, productId1, quantity2, false);
+        testCreateOrder(userId1, productId1, quantity3, false);
+    }
+
+    @Test
+    public void testCreateOrderError() {
+        testCreateOrder(userId1, productId1, quantity4, false);
+    }
+
+    private void testCreateOrder(int userId, int productId, int quantity, boolean expectValue) {
+        OrderResult result = orderService.createOrder(userId, productId, quantity);
+        System.out.println(result.toString());
+        Assert.assertEquals(expectValue, result.isSuccess());
+    }
+
 }
 </code>
 </pre>
 
 
+<h3>Junit运行结果</h3>
+
+<p><img src="/assets/unitTest.png" alt="" /></p>
+
 <h2>个人小结</h2>
 
-<h3>单元测试的局限</h3>
+<h3>单元测试的问题</h3>
 
-<h3>开发与测试的平衡</h3>
+<ol>
+<li>单元测试只能测试程序单元自身的功能、逻辑，无法发现诸如集成错误、性能问题、并发问题、其他系统级别的问题；</li>
+<li>编写单元测试代码需要一定的时间，有时甚至比单纯写功能代码还要费时费力，比如准备数据，构造正确、错误、异常的场景并进行验证，会在一定程度上影响项目进度；</li>
+<li>需要养成每天查看单元测试案例失败测试并及时确定错误原因，否则单元测试就流于形式，无法体现单元测试的价值，慢慢地与业务代码脱离，变为无效测试。</li>
+</ol>
+
+
+<h3>开发与测试</h3>
+
+<ol>
+<li>可以借鉴TDD思想来设计、编写代码。比如先假设所要实现的功能是由若干个类、接口的方法协同完成的，定义好互相交互的接口，然后进行单元测试，将接口mock掉，验证程序的逻辑是否满足预期，然后再进一步地将这些mock掉的接口、类实现。这样，既能确保程序逻辑的准确性、完整性，又能使得代码是可测试的、简单的代码，而不是复杂的、不可测试代码。切忌教条的生搬硬套，为了测试而测试；</li>
+<li>单元测试并非需要覆盖所有的系统代码，而是在逻辑比较复杂、分支较多、人脑无法直接判断逻辑是否正确、完备的情况下，选择使用单元测试这样的方式来辅助验证；</li>
+<li>单元测试关注点在某个程序单元上，内外部依赖均应该通过mock的方式去除，不应被这些依赖的组件运行情况影响；如需要进一步验证真实功能性，就已不是单元测试的范畴，此时应该在确保单元测试正确的前提下，进行集成测试。</li>
+<li>单元测试究竟要做到多细，估计也是古往今来大家讨论很久又没唯一结论的一个议题，大家有兴趣可以看看耗子的文章，或许能够得到一些启示：<a href="http://coolshell.cn/articles/8209.html">点击阅读</a></li>
+</ol>
+
 ]]></content:encoded>
     </item>
     
